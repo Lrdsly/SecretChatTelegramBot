@@ -1,13 +1,12 @@
-from telegram.ext import Application, CommandHandler, filters
+from telegram.ext import Application, CommandHandler, CallbackQueryHandler, MessageHandler, filters
 
 import db.pool as pool
 import db.initialize as initializer
-from handlers import start
+import handlers
 
 from dotenv import load_dotenv
 import asyncio
 import os
-import asyncio
 
 # ---- ENJOY CODING TODAY ----
 
@@ -23,7 +22,9 @@ if __name__ == "__main__":
     # you can change your API address here to use bot in 'bale' or... instead of telegram.
     app = Application.builder().token(TOKEN).base_url("https://tapi.bale.ai/bot").post_init(post_init).build()
 
-    app.add_handler(CommandHandler("start", start))    
+    app.add_handler(CommandHandler("start", handlers.start))    
+    app.add_handler(CallbackQueryHandler(handlers.help))
+    app.add_handler(MessageHandler(filters.TEXT, handlers.handle_text))
 
     print("start polling...")
     app.run_polling()
