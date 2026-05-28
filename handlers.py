@@ -1,8 +1,11 @@
 from telegram import Update
 from telegram.ext import ContextTypes 
+
+from db.users import get_or_register_user
 # ---- ENJOY CODING TODAY ----
 
 async def start(update: Update, context: ContextTypes.DefaultType):
+    user = await get_or_register_user(update.message.chat.id)
     await update.message.reply_text("سلام! خوش آومدی")
 
 async def add_to_waiting(user_id):

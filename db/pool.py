@@ -18,8 +18,8 @@ async def initialize_pool():
     global pool
     pool = await aiomysql.create_pool(
         **DB_CONFIG,
-        minimize = 1,
-        maximize = 5
+        minsize = 1,
+        maxsize = 5
     )
 
 async def fetchone(query, params):
