@@ -3,8 +3,9 @@ from telegram.ext import ContextTypes
 
 from keyboard import rkeyboard, get_keyboard
 from db.users import get_or_register_user
-from db.redis import add_to_queue, match_users
+from db import redis as r
 from db.pool import fetchone
+
 # ---- ENJOY CODING TODAY ----
 
 # 1 -----
@@ -24,10 +25,10 @@ async def help(update: Update, context: ContextTypes.DefaultType):
 
 # 3 -----
 async def find_chat(update: Update, context: ContextType.DefaultType):
-    await add_to_queue(update.message.chat.id)
-    users = await match_users()
+    await r.add_to_queue(update.message.chat.id)
+    users = await r.match_users()
 
-    if users:
+    if users: # get against data, message to user
         for i in range(2):
             ag_user = await fetchone("SELECT * FROM users WHERE telegram_id = %s", (users[i-1],))
             m = ""
@@ -39,19 +40,28 @@ async def find_chat(update: Update, context: ContextType.DefaultType):
              
             await context.bot.send_message(chat_id=users[i], text=f"شما به کاربر {m} وصل شدید.",
                                             reply_markup=get_keyboard([["پایان ارتباط", "رد کردن"]]))
+   
     await update.message.reply_text("صبر کن که ز غوره حلوا سازی")
 
 # 4 -----
 async def handle_text(update: Update, context: ContextType.DefaultContext):
     text = update.message.text
-    if text == "راهنما":
+    user_tid = update.message.chat.id
+
+    print("8"*20)
+    print(await r.get_user_state(user_tid))
+    if await r.get_user_state(user_tid) == "in-chat":
+        against = await r.get_user_against_id(user_tid)
+        await context.bot.send_message(chat_id=against, text=text)
+        await update.message.reply_text("پیام شما ارسال شد، در انتظار پاسخ شخص مقابل.")
+
+    elif text == "راهنما":
         await update.message.reply_text("فقط روی دکمه شروع چت کلیک کن تا به یک کاربر تصادفی متصل بشی")
     elif text == "شروع چت":
-        print("-"*100)
         await find_chat(update, context)
+    
 
 # ------
 
 async def end_chat(user_id):
     pass
-
