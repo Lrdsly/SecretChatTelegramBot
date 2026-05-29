@@ -24,7 +24,12 @@ CREATE_USERS_TABLE = """
                                 id INT AUTO_INCREMENT PRIMARY KEY,
                                 telegram_id BIGINT UNIQUE,
                                 personal_id VARCHAR(20) UNIQUE,
-                                joined_at DATETIME DEFAULT CURRENT_TIMESTAMP
+                                joined_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+
+                                name VARCHAR(100) NULL,
+                                lastname VARCHAR(100) NULL,
+                                username VARCHAR(100) NULL,
+                                phone VARCHAR(13) NULL
                     );
                      """
 

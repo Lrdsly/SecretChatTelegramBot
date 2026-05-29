@@ -27,5 +27,5 @@ async def match_users():
         return None
     query = "INSERT INTO a_connections (user1_id, user2_id) VALUES (%s, %s)"
     await execute(query, (user1, user2))
-    return (user1, user2)
+    return [user1, user2]
 
