@@ -38,10 +38,14 @@ async def match_users():
     await link_client_to_against(user1, user2)
     return [user1, user2]
 
-async def get_user_against_id(user_id):
+async def get_against_id(user_id:int):
     against_id = await r.get(f"against:{user_id}")
     return against_id
 
-async def get_user_state(user_id):
+async def get_user_state(user_id:int):
     state = await r.get(f"state:{user_id}")
     return state
+
+async def end_connection(user_id:int, against_id:int):
+    await r.delete(f"state:{user_id}"); await r.delete(f"state:{against_id}")
+    await r.delete(f"against:{user_id}"); await r.delete(f"against:{against_id}")

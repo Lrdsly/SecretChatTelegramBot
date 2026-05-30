@@ -23,7 +23,7 @@ if __name__ == "__main__":
     app = Application.builder().token(TOKEN).base_url("https://tapi.bale.ai/bot").post_init(post_init).build()
 
     app.add_handler(CommandHandler("start", handlers.start))    
-    app.add_handler(CallbackQueryHandler(handlers.help))
+    app.add_handler(CallbackQueryHandler(handlers._help))
     app.add_handler(MessageHandler(filters.TEXT, handlers.handle_text))
 
     print("start polling...")

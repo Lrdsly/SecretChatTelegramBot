@@ -6,15 +6,11 @@ ikeyboard = InlineKeyboardMarkup([
     [InlineKeyboardButton("راهنما", callback_data="help")]
 ])
 
-basic_reply_keyboard_buttons = [["حساب من", "راهنما"], ["شروع چت",]]
-
-rkeyboard = ReplyKeyboardMarkup(
-    basic_reply_keyboard_buttons,
-    resize_keyboard=True
-)
-
 def get_keyboard(buttons:list):
     return ReplyKeyboardMarkup(
         buttons,
         resize_keyboard=True
     )
+
+keyboard0 = get_keyboard([["حساب من", "راهنما"], ["شروع چت",]])
+keyboard1 = get_keyboard([["پایان ارتباط", "رد کردن"]])

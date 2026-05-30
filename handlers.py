@@ -1,10 +1,12 @@
 from telegram import Update
 from telegram.ext import ContextTypes
 
-from keyboard import rkeyboard, get_keyboard
+import keyboard as k
+from keyboard import get_keyboard
 from db.users import get_or_register_user
 from db import redis as r
 from db.pool import fetchone
+from db.anon import end_connection
 
 # ---- ENJOY CODING TODAY ----
 
@@ -15,10 +17,10 @@ async def start(update: Update, context: ContextTypes.DefaultType):
                                         personal_id=None,
                                         name=u.first_name, lastname=u.last_name,
                                         username=u.username)
-    await update.message.reply_text("سلام! خوش آومدی", reply_markup=rkeyboard)
+    await update.message.reply_text("سلام! خوش آومدی", reply_markup=k.keyboard0)
 
 # 2 -----
-async def help(update: Update, context: ContextTypes.DefaultType):
+async def _help(update: Update, context: ContextTypes.DefaultType):
     query = update.callback_query
     await query.answer()
     await query.message.reply_text("فقط روی دکمه 'شروع چت' کلیک کن تا به یک کاربر تصادفی متصل بشی.")
@@ -39,29 +41,40 @@ async def find_chat(update: Update, context: ContextType.DefaultType):
             elif ag_user[6]: m = ag_user[6]
              
             await context.bot.send_message(chat_id=users[i], text=f"شما به کاربر {m} وصل شدید.",
-                                            reply_markup=get_keyboard([["پایان ارتباط", "رد کردن"]]))
+                                            reply_markup=k.keyboard1)
    
     await update.message.reply_text("صبر کن که ز غوره حلوا سازی")
 
 # 4 -----
+async def end_chat(update: Update, context: ContextType.DefaultContext):
+    user_id = update.message.chat.id
+    against_id = await r.get_against_id(user_id)
+    await end_connection(user_id, against_id)
+    await r.end_connection(user_id, against_id)
+
+# 5 -----
 async def handle_text(update: Update, context: ContextType.DefaultContext):
+    keboard = None
     text = update.message.text
     user_tid = update.message.chat.id
 
-    print("8"*20)
-    print(await r.get_user_state(user_tid))
     if await r.get_user_state(user_tid) == "in-chat":
-        against = await r.get_user_against_id(user_tid)
-        await context.bot.send_message(chat_id=against, text=text)
-        await update.message.reply_text("پیام شما ارسال شد، در انتظار پاسخ شخص مقابل.")
+        reply_text = "پیام شما ارسال شد، در انتظار پاسخ شخص مقابل."
+        
+        against = await r.get_against_id(user_tid)
+        if text == "پایان ارتباط":
+            await end_chat(update, context)
+            reply_text = "ارتباط شما به پایان رسید."
+            other_text = f"مخاطب گفتگو رو پایان داد."
+            keyboard = k.keyboard0
+        else:
+            other_text = text
+            keyboard = k.keyboard1
+    
+        await context.bot.send_message(chat_id=against, text=other_text, reply_markup=keyboard)
+        await update.message.reply_text(reply_text, reply_markup=keyboard)
 
     elif text == "راهنما":
         await update.message.reply_text("فقط روی دکمه شروع چت کلیک کن تا به یک کاربر تصادفی متصل بشی")
     elif text == "شروع چت":
         await find_chat(update, context)
-    
-
-# ------
-
-async def end_chat(user_id):
-    pass
