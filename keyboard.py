@@ -14,3 +14,4 @@ def get_keyboard(buttons:list):
 
 keyboard0 = get_keyboard([["حساب من", "راهنما"], ["شروع چت",]])
 keyboard1 = get_keyboard([["پایان ارتباط", "رد کردن"]])
+keyboard2 = get_keyboard([["توقف جستجو"]])

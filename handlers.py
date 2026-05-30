@@ -84,6 +84,13 @@ async def handle_text(update: Update, context: ContextType.DefaultContext):
 
     elif text == "راهنما":
         await update.message.reply_text("فقط روی دکمه شروع چت کلیک کن تا به یک کاربر تصادفی متصل بشی")
+ 
     elif text == "شروع چت":
-        await update.message.reply_text("در جستجوی یک کاربر، لطفا صبور باشید.")
+        await update.message.reply_text("در جستجوی یک کاربر، لطفا صبور باشید.", reply_markup=k.keyboard2)
         await find_chat(update, context)
+
+    elif text == "توقف جستجو":
+        if await r.get_user_state(user_tid) == "searching":
+            await r.update_user_state(user_tid, "balanced")
+            await r.remove_from_queue(user_tid)
+            await update.message.reply_text("جستجو لغو شد.", reply_markup=k.keyboard0)
