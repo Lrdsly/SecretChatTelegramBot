@@ -42,8 +42,6 @@ async def find_chat(update: Update, context: ContextType.DefaultType):
              
             await context.bot.send_message(chat_id=users[i], text=f"شما به کاربر {m} وصل شدید.",
                                             reply_markup=k.keyboard1)
-   
-    await update.message.reply_text("صبر کن که ز غوره حلوا سازی")
 
 # 4 -----
 async def end_chat(update: Update, context: ContextType.DefaultContext):
@@ -53,6 +51,11 @@ async def end_chat(update: Update, context: ContextType.DefaultContext):
     await r.end_connection(user_id, against_id)
 
 # 5 -----
+async def next_chat(update: Update, context: ContextType.DefaultContext):
+    await end_chat(update, context)
+    await find_chat(update, context)
+
+# 6 -----
 async def handle_text(update: Update, context: ContextType.DefaultContext):
     keboard = None
     text = update.message.text
@@ -67,6 +70,11 @@ async def handle_text(update: Update, context: ContextType.DefaultContext):
             reply_text = "ارتباط شما به پایان رسید."
             other_text = f"مخاطب گفتگو رو پایان داد."
             keyboard = k.keyboard0
+        elif text == "رد کردن":
+            await next_chat(update, context)
+            reply_text = "ارتباط شما به پایان رسید،\n در حال جتستجوی مخاطب بعد."
+            other_text = f"مخاطب گفتگو رو پایان داد"
+            keyboard = k.keyboard0
         else:
             other_text = text
             keyboard = k.keyboard1
@@ -77,4 +85,5 @@ async def handle_text(update: Update, context: ContextType.DefaultContext):
     elif text == "راهنما":
         await update.message.reply_text("فقط روی دکمه شروع چت کلیک کن تا به یک کاربر تصادفی متصل بشی")
     elif text == "شروع چت":
+        await update.message.reply_text("در جستجوی یک کاربر، لطفا صبور باشید.")
         await find_chat(update, context)
