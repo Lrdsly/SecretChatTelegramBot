@@ -1,22 +1,28 @@
-from dotenv import load_dotenv
+from db.pool import execute
 
-import aiomysql
 import asyncio
-import os 
 
 # ---- ENJOY CODING TODAY ----
 
-load_dotenv()
-user = os.getenv("DB_USER")
-password = os.getenv("DB_PASSWORD")
-db = os.getenv("DB_NAME")
+CREATE_BLOCKED_USERS_TABEL = """
+                             CREATE TABLE blocked_user IF NOT EXISTS (
+                                id INT AUTO_INCREMENT PRIMARY KEY,
+                                user_id BIGINT NOT NULL,
+                                blocked_user_id BIGINT NOT NULL,
+                                blocked_time DATETIME DEFAULT CURRENT_TIMESTAMP
+                             )
+                             """
 
-DB_CONFIG = {
-    "host": "localhost",
-    "user": user,
-    "password": password,
-    "db": db
-}
+CREATE_SANON_MESSAGES_TABLES = """
+                               CREATE TABLE sanon_messages IF NOT EXISTS (
+                                    id INT AUTO_INCREMENT PRIMARY KEY,
+                                    conversation_id INT NOT NULL,
+                                    message_text TEXT,
+                                    sent_time DATETIME DEFAULT CURRENT_TIMESTAMP,
+                                    is_read BOOLEAN DEFAULT FALSE,
+                                    FOREIGN KEY (conversation_id) REFERENCES sa_connections(id)
+                               )
+                               """
 
 CREATE_USERS_TABLE = """
                     CREATE TABLE IF NOT EXISTS users (
@@ -37,8 +43,8 @@ CREATE_SEMI_ANONYMOUS_CONNECTIONS_TABLE = """
                             CREATE TABLE IF NOT EXISTS sa_connections (
                             
                                 id INT AUTO_INCREMENT PRIMARY KEY,
-                                user1_id BIGINT,
-                                user2_id BIGINT,
+                                user_id BIGINT,
+                                against_id BIGINT,
                                 started_at DATETIME NULL,
                                 closed_at DATETIME NULL
                              );
@@ -53,14 +59,13 @@ CREATE_ANONYMOUS_CONNECTIONS_TABLE = """
                                         closed_at DATETIME NULL
                                     );
                                      """
+
 async def init_db():
-    conn = await aiomysql.connect(**DB_CONFIG)
-    async with conn.cursor() as cur:
-        await cur.execute(CREATE_USERS_TABLE)
-        await cur.execute(CREATE_SEMI_ANONYMOUS_CONNECTIONS_TABLE)
-        await cur.execute(CREATE_ANONYMOUS_CONNECTIONS_TABLE)
-        await conn.commit()
-    conn.close()
+    await execute(CREATE_USERS_TABLE)
+    await execute(CREATE_SEMI_ANONYMOUS_CONNECTIONS_TABLEM)
+    await execute(CREATE_ANONYMOUS_CONNECTIONS_TABLE)
+    await execute(CREATE_BLOCKED_USER_TABLE)
+    await execute(CREATE_SANON_MESSAGES_TABLE)
     print("Database initialized successfully.")
 
 if __name__ == "__main__":

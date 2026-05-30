@@ -28,7 +28,7 @@ async def fetchone(query, params):
             await cur.execute(query, params)
             return await cur.fetchone()
 
-async def execute(query, params):
+async def execute(query, params=None):
     async with pool.acquire() as conn:
         async with conn.cursor() as cur:
             await cur.execute(query, params)
