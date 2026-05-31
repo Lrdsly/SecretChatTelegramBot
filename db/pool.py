@@ -28,15 +28,24 @@ async def fetchone(query, params):
             await cur.execute(query, params)
             return await cur.fetchone()
 
+async def fetchall(query, params=None):
+    async with pool.acquire() as conn:
+        async with conn.cursor() as cur:
+            await cur.execute(query, params)
+            return await cur.fetchall()
+
 async def execute(query, params=None):
     async with pool.acquire() as conn:
         async with conn.cursor() as cur:
             await cur.execute(query, params)
             await conn.commit()
 
+<<<<<<< HEAD
 async def execute_return_id(query, params):
     async with pool.acquire() as conn:
         async with conn.cursor() as cur:
             await cur.execute(query, params)
             await conn.commit()
             return cur.lastrowid()
+=======
+>>>>>>> df60fdf (add "my chats" button in semi anon .)

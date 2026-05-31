@@ -4,8 +4,8 @@ import asyncio
 
 # ---- ENJOY CODING TODAY ----
 
-CREATE_BLOCKED_USERS_TABEL = """
-                             CREATE TABLE blocked_user IF NOT EXISTS (
+CREATE_BLOCKED_USERS_TABLE = """
+                             CREATE TABLE IF NOT EXISTS blocked_users(
                                 id INT AUTO_INCREMENT PRIMARY KEY,
                                 user_id BIGINT NOT NULL,
                                 blocked_user_id BIGINT NOT NULL,
@@ -13,8 +13,8 @@ CREATE_BLOCKED_USERS_TABEL = """
                              )
                              """
 
-CREATE_SANON_MESSAGES_TABLES = """
-                               CREATE TABLE sanon_messages IF NOT EXISTS (
+CREATE_SANON_MESSAGES_TABLE = """
+                               CREATE TABLE IF NOT EXISTS sanon_messages (
                                     id INT AUTO_INCREMENT PRIMARY KEY,
                                     conversation_id INT NOT NULL,
                                     message_text TEXT,
@@ -62,9 +62,9 @@ CREATE_ANONYMOUS_CONNECTIONS_TABLE = """
 
 async def init_db():
     await execute(CREATE_USERS_TABLE)
-    await execute(CREATE_SEMI_ANONYMOUS_CONNECTIONS_TABLEM)
+    await execute(CREATE_SEMI_ANONYMOUS_CONNECTIONS_TABLE)
     await execute(CREATE_ANONYMOUS_CONNECTIONS_TABLE)
-    await execute(CREATE_BLOCKED_USER_TABLE)
+    await execute(CREATE_BLOCKED_USERS_TABLE)
     await execute(CREATE_SANON_MESSAGES_TABLE)
     print("Database initialized successfully.")
 
