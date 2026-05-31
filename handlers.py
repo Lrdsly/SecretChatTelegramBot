@@ -4,12 +4,12 @@ from telegram.ext import ContextTypes
 import keyboard as k
 from keyboard import get_keyboard
 
+import db.semi_anon as semia
+from db.semi_anon import get_sa_chats_id as get_sci
 from db import redis as r
 from db.pool import fetchone
 from db.anon import end_connection
-from db.semi_anon import get_sa_chats_id as get_sci
-import db.semi_anon as semia
-from db.users import get_or_register_user
+from db.users import get_or_register_user, get_secret_link
 
 # ---- ENJOY CODING TODAY ----
 
@@ -123,5 +123,13 @@ async def handle_text(update: Update, context: ContextType.DefaultContext):
             keyboard = k.keyboard0
         await update.message.reply_text(text=reply_text, reply_markup=keyboard)
     
+    elif text == "حساب من":
+        await update.message.reply_text("یک گزینه رو انتخاب کنید", reply_markup=k.keyboard3)
+    
+    elif text == "لینک ناشناس من":
+        secret_link = await get_secret_link(user_tid)
+        reply_text = "لینک ناشناس شما: کافی است روی این لینک کلیک شود تا به طور ناشناس به شما پیام بدهند\n\n\n\n" + secret_link
+        await update.message.reply_text(reply_text, reply_markup=k.keyboard3)
+
     elif text == "بازگشت":
         await update.message.reply_text("صفحه اصلی:", reply_markup=k.keyboard0)
