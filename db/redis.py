@@ -47,6 +47,13 @@ async def match_users():
     await link_client_to_against(user1_id, user2_id)
     return [user1_id, user2_id]
 
+async def match_sa_users(user_id:int, against_id:int):
+    """ We know who is against, but user is anonymous"""
+
+    query = """ INSERT INTO sa_connections (user_id, against_id) VALUES (%s, %s)"""
+    await execute(query, (user_id, against_id))
+    await link_client_to_against(user_id, against_id)
+
 async def get_against_id(user_id:int):
     against_id = await r.get(f"against:{user_id}")
     return against_id

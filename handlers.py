@@ -9,18 +9,26 @@ from db.semi_anon import get_sa_chats_id as get_sci
 from db import redis as r
 from db.pool import fetchone
 from db.anon import end_connection
-from db.users import get_or_register_user, get_secret_link
+from db.users import get_or_register_user, get_secret_link, get_user_by_personal_id
 
 # ---- ENJOY CODING TODAY ----
 
 # ----- Generals -----------
 async def start(update: Update, context: ContextTypes.DefaultType):
+    reply_text = "سلام! خوش آومدی"
     u = update.effective_user
     user = await get_or_register_user(telegram_id=u.id,
                                         personal_id=None,
                                         name=u.first_name, lastname=u.last_name,
                                         username=u.username)
-    await update.message.reply_text("سلام! خوش آومدی", reply_markup=k.keyboard0)
+    args = context.args
+    if args:
+        name = "سالار"
+        against_user = await get_user_by_personal_id(args[0])
+        await r.match_sa_users(u.id, against_user[1])
+        reply_text = f"شما به کاربر {name} وصل شدید. لطفا پیام خود را بفرستید"
+
+    await update.message.reply_text(reply_text, reply_markup=k.keyboard0)
 
 async def _help(update: Update, context: ContextTypes.DefaultType):
     query = update.callback_query
@@ -63,40 +71,9 @@ async def handle_text(update: Update, context: ContextType.DefaultContext):
     text = update.message.text
     user_tid = update.message.chat.id
 
-    if await r.get_user_state(user_tid) == "in-chat":
-        reply_text = "پیام شما ارسال شد، در انتظار پاسخ شخص مقابل."
-        
-        against = await r.get_against_id(user_tid)
-        if text == "پایان ارتباط":
-            await end_chat(update, context)
-            reply_text = "ارتباط شما به پایان رسید."
-            other_text = f"مخاطب گفتگو رو پایان داد."
-            keyboard = k.keyboard0
-        elif text == "رد کردن":
-            await next_chat(update, context)
-            reply_text = "ارتباط شما به پایان رسید،\n در حال جتستجوی مخاطب بعد."
-            other_text = f"مخاطب گفتگو رو پایان داد"
-            keyboard = k.keyboard0
-        else:
-            other_text = text
-            keyboard = k.keyboard1
-    
-        await context.bot.send_message(chat_id=against, text=other_text, reply_markup=keyboard)
-        await update.message.reply_text(reply_text, reply_markup=keyboard)
-
-    elif text == "راهنما":
+    if text == "راهنما":
         await update.message.reply_text("فقط روی دکمه شروع چت کلیک کن تا به یک کاربر تصادفی متصل بشی")
  
-    elif text == "شروع چت":
-        await update.message.reply_text("در جستجوی یک کاربر، لطفا صبور باشید.", reply_markup=k.keyboard2)
-        await find_chat(update, context)
-
-    elif text == "توقف جستجو":
-        if await r.get_user_state(user_tid) == "searching":
-            await r.update_user_state(user_tid, "balanced")
-            await r.remove_from_queue(user_tid)
-            await update.message.reply_text("جستجو لغو شد.", reply_markup=k.keyboard0)
-
     elif text == "گفتگو های من":
         reply_text = "لیست گفتگو های ناشناس شما:"
         
@@ -133,3 +110,34 @@ async def handle_text(update: Update, context: ContextType.DefaultContext):
 
     elif text == "بازگشت":
         await update.message.reply_text("صفحه اصلی:", reply_markup=k.keyboard0)
+    
+    elif await r.get_user_state(user_tid) == "in-chat":
+        reply_text = "پیام شما ارسال شد، در انتظار پاسخ شخص مقابل."
+        
+        against = await r.get_against_id(user_tid)
+        if text == "پایان ارتباط":
+            await end_chat(update, context)
+            reply_text = "ارتباط شما به پایان رسید."
+            other_text = f"مخاطب گفتگو رو پایان داد."
+            keyboard = k.keyboard0
+        elif text == "رد کردن":
+            await next_chat(update, context)
+            reply_text = "ارتباط شما به پایان رسید،\n در حال جتستجوی مخاطب بعد."
+            other_text = f"مخاطب گفتگو رو پایان داد"
+            keyboard = k.keyboard0
+        else:
+            other_text = text
+            keyboard = k.keyboard1
+    
+        await context.bot.send_message(chat_id=against, text=other_text, reply_markup=keyboard)
+        await update.message.reply_text(reply_text, reply_markup=keyboard)
+
+    elif text == "شروع چت":
+        await update.message.reply_text("در جستجوی یک کاربر، لطفا صبور باشید.", reply_markup=k.keyboard2)
+        await find_chat(update, context)
+
+    elif text == "توقف جستجو":
+        if await r.get_user_state(user_tid) == "searching":
+            await r.update_user_state(user_tid, "balanced")
+            await r.remove_from_queue(user_tid)
+            await update.message.reply_text("جستجو لغو شد.", reply_markup=k.keyboard0)
