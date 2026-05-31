@@ -13,14 +13,16 @@ CREATE_BLOCKED_USERS_TABLE = """
                              )
                              """
 
-CREATE_SANON_MESSAGES_TABLE = """
-                               CREATE TABLE IF NOT EXISTS sanon_messages (
+CREATE_SEMI_MESSAGES_TABLE = """
+                               CREATE TABLE IF NOT EXISTS semi_messages (
                                     id INT AUTO_INCREMENT PRIMARY KEY,
+                                    sender_id BIGINT NOT NULL,
                                     conversation_id INT NOT NULL,
                                     message_text TEXT,
                                     sent_time DATETIME DEFAULT CURRENT_TIMESTAMP,
                                     is_read BOOLEAN DEFAULT FALSE,
                                     FOREIGN KEY (conversation_id) REFERENCES sa_connections(id)
+                                    FOREIGN KEY (sender_id) REFERENCES users(telegram_ids)
                                )
                                """
 
@@ -65,7 +67,7 @@ async def init_db():
     await execute(CREATE_SEMI_ANONYMOUS_CONNECTIONS_TABLE)
     await execute(CREATE_ANONYMOUS_CONNECTIONS_TABLE)
     await execute(CREATE_BLOCKED_USERS_TABLE)
-    await execute(CREATE_SANON_MESSAGES_TABLE)
+    await execute(CREATE_SEMI_MESSAGES_TABLE)
     print("Database initialized successfully.")
 
 if __name__ == "__main__":
