@@ -40,12 +40,9 @@ async def execute(query, params=None):
             await cur.execute(query, params)
             await conn.commit()
 
-<<<<<<< HEAD
 async def execute_return_id(query, params):
     async with pool.acquire() as conn:
         async with conn.cursor() as cur:
             await cur.execute(query, params)
             await conn.commit()
             return cur.lastrowid()
-=======
->>>>>>> df60fdf (add "my chats" button in semi anon .)
