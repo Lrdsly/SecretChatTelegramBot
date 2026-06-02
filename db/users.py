@@ -45,7 +45,7 @@ async def get_or_register_user(telegram_id:int,
 async def get_secret_link(user_id:int):
     query = "SELECT personal_id FROM users WHERE telegram_id = %s"
     personal_id = await fetchone(query, (user_id,))
-    link = f"https://t.me/DebtManagerBot?start={personal_id[0]}"
+    link = f"https://ble.ir/DebtManagerBot?start={personal_id[0]}"
     return link
 
 async def get_user_by_personal_id(personal_id:int):

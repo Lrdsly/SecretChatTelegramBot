@@ -1,7 +1,7 @@
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, ReplyKeyboardMarkup
 
-import db/semi_anon as semi
-import db/redis as r
+import db.semi_anon as semi
+import db.redis as r
 
 # ---- YOU CHOOSE THIS ONE ----
 
@@ -26,6 +26,7 @@ async def get_semi_chat_buttons(user_id):
         return a markupKeyboard which include sa_connections rows which user is the 'against' part of them
         also store all of these sa_connection id into redis 
     """
+
     chats = await semi.get_semi_chats_id(user_id)
     chats_count = len(chats)
 

@@ -21,8 +21,8 @@ CREATE_SEMI_MESSAGES_TABLE = """
                                     message_text TEXT,
                                     sent_time DATETIME DEFAULT CURRENT_TIMESTAMP,
                                     is_read BOOLEAN DEFAULT FALSE,
-                                    FOREIGN KEY (conversation_id) REFERENCES sa_connections(id)
-                                    FOREIGN KEY (sender_id) REFERENCES users(telegram_ids)
+                                    FOREIGN KEY (conversation_id) REFERENCES sa_connections(id),
+                                    FOREIGN KEY (sender_id) REFERENCES users(telegram_id)
                                )
                                """
 

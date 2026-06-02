@@ -45,4 +45,4 @@ async def execute_return_id(query, params):
         async with conn.cursor() as cur:
             await cur.execute(query, params)
             await conn.commit()
-            return cur.lastrowid()
+            return cur.lastrowid

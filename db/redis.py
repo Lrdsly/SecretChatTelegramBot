@@ -72,8 +72,8 @@ async def match_sa_users(user_id:int, against_id:int):
         We know who is against, but user is anonymous
     """
 
-    await create_sa_connections_row(user_id, against_id)
     await link_client_to_against(user_id, against_id, "semi-chat")
+    return await create_sa_connections_row(user_id, against_id)
 
 async def get_against_id(user_id:int):
     """ example: (against:12345678 = 8888822222)"""
@@ -96,7 +96,7 @@ async def store_chat_id_hash(mapping:dict, user_id:int):
         
         chatmap:12345678 = {user1:15,
                             user2:21}
-    """"
+    """
 
     await r.hset(f"chatmap:{user_id}", 
                     mapping=mapping   
@@ -110,14 +110,17 @@ async def check_chat_id_exists(usern:str, user_id:int):
     chat_id = await r.hget(f"chatmap:{user_id}", usern)
     return bool(chat_id)
 
-async def set_current_semi_chat_id(usern:str, user_id:int):
+async def set_current_semi_chat_id(user_id:int, usern: str|None = None, chat_id: int|None = None):
     """ 
         example: (current_semi_chat:88888888 = 12)
-        get sa_connection id from user* button which user clicked on that before.
-        match this number with user telegram id.
-    """
+        1) get sa_connection id from user* button which user clicked on that before.
+        2) match this number with user telegram id.
 
-    chat_id = await r.hget(f"chatmap:{user_id}", usern)
+        you can get chat_id from the value of user* which is saved by store_chat_id_hash before
+        you also can give the chat id manual
+    """
+    if usern:
+        chat_id = await r.hget(f"chatmap:{user_id}", usern)
     await r.set(f"current_semi_chat:{user_id}", chat_id)
 
 async def get_current_semi_chat_id(user_id:int):
