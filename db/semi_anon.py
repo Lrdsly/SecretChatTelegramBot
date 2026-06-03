@@ -26,12 +26,6 @@ async def get_current_semi_chat_id(user_id, against_id):
                     closed_at IS NULL
             """
     return await fetchone(query, (user_id, against_id))
-# به ازای هر چت یک کوری ارسال میشه . در نسخه های بعدی به گرفتن تمام پیام های ناخوانده با یک کوری بپرداز
-async def store_sent_message(sender_id, conversation_id:int, message):
-    query = """
-                INSERT INTO semi_messages (sender_id, conversation_id, message_text) VALUES (%s, %s, %s)
-            """
-    await execute(query, (sender_id, conversation_id, message))
 
 async def create_sa_connections_row(user_id:int, against_id:int):
     query = """ INSERT INTO sa_connections (user_id, against_id) VALUES (%s, %s)"""

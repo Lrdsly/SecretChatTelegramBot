@@ -1,4 +1,4 @@
-from db.pool import fetchone, execute
+from db.pool import fetchone, execute, execute_return_id
 from random import choices
 import string
 
@@ -20,9 +20,8 @@ async def register_user(
         personal_id = generate_pid(char_count=8)
     build_query = """INSERT INTO users (telegram_id, personal_id, name, lastname, username, phone) VALUES
                                       (%s, %s, %s, %s, %s, %s)"""
-    fetch_query = "SELECT * FROM users WHERE id = LAST_INSERT_ID()"
-    await execute(build_query, (telegram_id, personal_id, name, lastname, username, phone))
-    user = await fetchone(fetch_query, None)
+    user_id = await execute_return_id(build_query, (telegram_id, personal_id, name, lastname, username, phone))
+    user = await fetchone("SELECT * FROM users WHERE id = %s", user_id)
     return user
 
 async def get_or_register_user(telegram_id:int,
