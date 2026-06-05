@@ -1,5 +1,6 @@
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, ReplyKeyboardMarkup
 
+import db.messages as messages
 import db.semi_anon as semi
 import db.redis as r
 
@@ -27,17 +28,18 @@ async def get_semi_chat_buttons(user_id):
         also store all of these sa_connection id into redis 
     """
 
-    chats = await semi.get_semi_chats_id(user_id)
-    chats_count = len(chats)
+    chats_id = await semi.get_semi_chats_id(user_id)
+    if not chats_id: return False
 
-    chatmap = {f"user{i+1}":chats[i] for i in range(chats_count)}
+    chats_count = len(chats_id)
+    chatmap = {f"user{i+1}":chats_id[i][0] for i in range(chats_count)}
     await r.store_chat_id_hash(chatmap, user_id)
 
     if chats_count > 1:
         buttons = []
 
         for i in range(chats_count):
-            unread_messages = len(await semi.get_unread_messages(chats[i][0]))
+            unread_messages = await messages.get_unread_messages_count(chats_id[i][0])
             buttons.append(f"user{i+1} ({unread_messages})")
 
         keyboard_buttons = [
@@ -49,7 +51,5 @@ async def get_semi_chat_buttons(user_id):
         return keyboard
 
     elif chats_count == 1: 
-        keyboard = get_keyboard([[f"user1 ({len(await semi.get_unread_messages(chats[0]))})"], ["بازگشت"]])
+        keyboard = get_keyboard([[f"user1 ({await messages.get_unread_messages_count(chats_id[0][0])})"], ["بازگشت"]])
         return keyboard
-
-    return False

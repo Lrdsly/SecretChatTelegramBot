@@ -7,6 +7,7 @@ from keyboard import get_keyboard
 import keyboard as k
 
 import db.semi_anon as semi
+import db.messages as m
 from db import redis as r
 from db.pool import fetchone
 from db.anon import end_connection
@@ -15,7 +16,7 @@ from db.users import get_or_register_user, get_secret_link, get_user_by_personal
 # ---- ENJOY CODING TODAY ----
 
 # ----- Generals -----------
-async def start(update: Update, context: ContextTypes.DefaultType):
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     reply_text = "سلام! خوش آومدی"
     u = update.effective_user
     user = await get_or_register_user(telegram_id=u.id,
@@ -24,51 +25,74 @@ async def start(update: Update, context: ContextTypes.DefaultType):
                                         username=u.username)
     args = context.args
     if args:
-        name = "سالار"
         against_user = await get_user_by_personal_id(args[0])
-        sa_connection_id = await r.match_sa_users(u.id, against_user[1])
-        await r.set_current_semi_chat_id(user_id=u.id, chat_id=sa_connection_id)
-        reply_text = f"شما به کاربر {name} وصل شدید. لطفا پیام خود را بفرستید"
-
+        if against_user:
+            against_name = against_user[4] or against_user[5] or "ناشناس"
+        
+            # configure chats
+            sa_connection_id = await r.match_sa_users(u.id, against_user[1])
+            await r.set_current_semi_chat_id(user_id=u.id, chat_id=sa_connection_id)
+        
+            reply_text = f"شما به کاربر {against_name} وصل شدید. لطفا پیام خود را بفرستید"
+        else: reply_text = "چنین شخصی ای وجود ندارد یا شناسه شخصی اشتباه است."
     await update.message.reply_text(reply_text, reply_markup=k.keyboard0)
 
-async def _help(update: Update, context: ContextTypes.DefaultType):
+async def _help(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
     await query.message.reply_text("فقط روی دکمه 'شروع چت' کلیک کن تا به یک کاربر تصادفی متصل بشی.")
 
 # ----- Anonymous ----------
-async def find_chat(update: Update, context: ContextType.DefaultType):
+async def find_chat(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await r.add_to_queue(update.message.chat.id)
     users = await r.match_users()
 
     if users: # get against data, message to user
         for i in range(2):
-            ag_user = await fetchone("SELECT * FROM users WHERE telegram_id = %s", (users[i-1],))
-            m = ""
-            if ag_user[4]:
-                m = ag_user[4]
-                if ag_user[5]:
-                    m += ag_user[5]
-            elif ag_user[6]: m = ag_user[6]
+            against_user = await fetchone("SELECT * FROM users WHERE telegram_id = %s", (users[i-1],))
+            against_name = ""
+            if against_user[4]:
+                against_name = against_user[4]
+                if against_user[5]:
+                    against_name += against_user[5]
+            else:
+                against_name = "ناشناس"
              
-            await context.bot.send_message(chat_id=users[i], text=f"شما به کاربر {m} وصل شدید.",
+            await context.bot.send_message(chat_id=users[i], text=f"شما به کاربر {against_name} وصل شدید.",
                                             reply_markup=k.keyboard1)
 
-async def end_chat(update: Update, context: ContextType.DefaultContext):
+async def end_chat(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.message.chat.id
     against_id = await r.get_against_id(user_id)
     await end_connection(user_id, against_id)
     await r.end_connection(user_id, against_id)
 
-async def next_chat(update: Update, context: ContextType.DefaultContext):
+async def next_chat(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await end_chat(update, context)
     await find_chat(update, context)
 
 # ----- Semi Anonymous -----
 
+async def select_chat(button_text:str, against_id:int):
+    sa_connection_id = await r.get_chat_id_by_button(against_id, button_text)
+    if bool(sa_connection_id):
+        await r.set_current_semi_chat_id(user_id=against_id, chat_id=sa_connection_id)
+        sides = await semi.get_semi_chat_sides(sa_connection_id)
+        sender_id = sides[0]
+        await r.link_client_to_against(against_id, sender_id, "semi-chat")
+        unread_messages = await m.get_unread_messages(sender_id=sender_id, conversation_id=sa_connection_id)
+        unread_messages = [[i, sender_id, sa_connection_id] for i in unread_messages]
+        return unread_messages
+    return False
+
+async def semi_end_chat(update: Update, context: ContextTypes.DeafultContext):
+    against_id = update.message.chat.id
+    user_id = await r.get_against_id(against_id)
+    await semi.end_connection(user_id, against_id)
+    await r.end_connection(user_id, against_id)
+
 # ----- Combination --------
-async def handle_text(update: Update, context: ContextType.DefaultContext):
+async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
     keboard = None
     text = update.message.text
     user_tid = update.message.chat.id
@@ -90,14 +114,18 @@ async def handle_text(update: Update, context: ContextType.DefaultContext):
         await update.message.reply_text("یک گزینه رو انتخاب کنید", reply_markup=k.keyboard3) 
 
     # user clicked on user* button.
-    elif (match := re.fullmatch("(user\d+)\s+\(\d+\)", text)):
+    elif (match := re.fullmatch(r"(user\d+)\s+\(\d+\)", text)):
         keyboard = await k.get_semi_chat_buttons(user_tid)
-        reply_text = "شما چنین گفتگویی ندارید"
-        if await r.check_chat_id_exists(match.group(1), user_tid):
-            await r.set_current_semi_chat_id(user_id=user_tid, usern=match.group(1))
-            reply_text = f"گفتگو با {match.group(1)} انتخاب شد"
 
-        await update.message.reply_text(reply_text, reply_markup=keyboard)
+        chat_state = await select_chat(match.group(1), user_tid)
+        if chat_state:
+            await update.message.reply_text(f"گفتگوی {match.group(1)} انتخاب شد.", reply_markup=keyboard)
+            for message in chat_state:
+                context.bot.send_message(message, chat_id=user_tid)
+            else:
+                await m.update_message_status(message_sender=message[1], conversation_id=message[2])
+        else:
+            await update.message.reply_text("چنین گفتگویی وجود ندارد", reply_markup=keyboard)
    
     elif text == "لینک ناشناس من":
         secret_link = await get_secret_link(user_tid)
@@ -141,7 +169,7 @@ async def handle_text(update: Update, context: ContextType.DefaultContext):
             other_text = "مخاطب به گفتگو پایان داد"
         else:
             current_chat_id = await r.get_current_semi_chat_id(user_tid)
-            await semi.store_sent_message(user_tid, current_chat_id, text)
+            await m.store_sent_message(user_tid, current_chat_id, text)
 
         await update.message.reply_text(reply_text, reply_markup=keyboard)
         await context.bot.send_message(chat_id=against, text=other_text, reply_markup=keyboard)

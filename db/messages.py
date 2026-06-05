@@ -1,4 +1,4 @@
-from pool import fetchall, execute
+from db.pool import fetchall, fetchone, execute
 
 # This icecream is for you: &>
 
@@ -14,14 +14,22 @@ async def get_unread_messages(sender_id, conversation_id:int):
     query = """
                 SELECT * FROM semi_messages WHERE (sender_id, conversation_id) = (%s, %s)
             """
-    messages = await fetchall(query, (sender_id, conversation:int))
+    messages = await fetchall(query, (sender_id, conversation_id))
     return messages
+
+async def get_unread_messages_count(conversation_id:int):
+    query = """
+                SELECT COUNT(*) FROM semi_messages WHERE
+                conversation_id = %s AND
+                is_read = FALSE
+            """
+    return (await fetchone(query, (conversation_id,)))[0]
 
 async def update_messages_status(sender_id:int, conversation_id:int):
     query = """
                 UPDATE semi_messages SET is_read = TRUE WHERE
-                                    sender_id = %s,
-                                    conversation_id = %s,
+                                    sender_id = %s AND
+                                    conversation_id = %s AND
                                     is_read = FALSE
             """
     await execute(query, (sender_id, conversation_id))

@@ -11,6 +11,7 @@ r = redis.Redis(
     decode_responses=True
 )
 
+# ----- General ----
 async def update_user_state(user_id:int, state:str):
     """ example: (state:78123495 = 'anon-chat') """
 
@@ -21,18 +22,6 @@ async def get_user_state(user_id:int):
 
     state = await r.get(f"state:{user_id}")
     return state
-
-async def add_to_queue(user_id:int):
-    """ add a telegram id to 'search for aponent' list from right side """
-
-    if await get_user_state(user_id) not in ["searching", "anon-chat"]:
-        await r.rpush("anon_chat_queue", user_id)
-        await update_user_state(user_id, "searching")
-
-async def remove_from_queue(user_id:int):
-    """ remove a telegram id from 'search for aponent' from left side """
-
-    await r.lrem("anon_chat_queue", 1, user_id)
 
 async def link_client_to_against(user_id:int, against_id:int, chat_type):
     """ 
@@ -45,7 +34,35 @@ async def link_client_to_against(user_id:int, against_id:int, chat_type):
 
     await r.set(f"against:{user_id}", against_id) # user side
     await r.set(f"against:{against_id}", user_id) # against side
-    
+
+async def get_against_id(user_id:int):
+    """ example: (against:12345678 = 8888822222)"""
+
+    against_id = await r.get(f"against:{user_id}")
+    return against_id
+
+async def end_connection(user_id:int, against_id:int):
+    """ 
+        delete state:nnnnnnnn (since now it will return none)
+        delete against:nnnnnnnn (since now it will return none)
+    """
+
+    await r.delete(f"state:{user_id}"); await r.delete(f"state:{against_id}")
+    await r.delete(f"against:{user_id}"); await r.delete(f"against:{against_id}")
+
+# ---- Anonymous chat ----
+async def add_to_queue(user_id:int):
+    """ add a telegram id to 'search for aponent' list from right side """
+
+    if await get_user_state(user_id) not in ["searching", "anon-chat"]:
+        await r.rpush("anon_chat_queue", user_id)
+        await update_user_state(user_id, "searching")
+
+async def remove_from_queue(user_id:int):
+    """ remove a telegram id from 'search for aponent' from left side """
+
+    await r.lrem("anon_chat_queue", 1, user_id)
+
 async def match_users():
     """
         Is there at least 2 users in queue?
@@ -67,6 +84,7 @@ async def match_users():
     await link_client_to_against(user1_id, user2_id, "anon-chat")
     return [user1_id, user2_id]
 
+# ---- Semi Anon ----
 async def match_sa_users(user_id:int, against_id:int):
     """ 
         We know who is against, but user is anonymous
@@ -74,21 +92,6 @@ async def match_sa_users(user_id:int, against_id:int):
 
     await link_client_to_against(user_id, against_id, "semi-chat")
     return await create_sa_connections_row(user_id, against_id)
-
-async def get_against_id(user_id:int):
-    """ example: (against:12345678 = 8888822222)"""
-
-    against_id = await r.get(f"against:{user_id}")
-    return against_id
-
-async def end_connection(user_id:int, against_id:int):
-    """ 
-        delete state:nnnnnnnn (since now it will return none)
-        delete against:nnnnnnnn (since now it will return none)
-    """
-
-    await r.delete(f"state:{user_id}"); await r.delete(f"state:{against_id}")
-    await r.delete(f"against:{user_id}"); await r.delete(f"against:{against_id}")
 
 async def store_chat_id_hash(mapping:dict, user_id:int):
     """
@@ -102,15 +105,11 @@ async def store_chat_id_hash(mapping:dict, user_id:int):
                     mapping=mapping   
                 )
 
-async def check_chat_id_exists(usern:str, user_id:int):
-    """
-        return false if user has only n open chat and trys to access chat n+m 
-    """
+async def get_chat_id_by_button(user_id:int, button_text:str):
+    return await r.hget(f"chatmap:{user_id}", button_text)
 
-    chat_id = await r.hget(f"chatmap:{user_id}", usern)
-    return bool(chat_id)
-
-async def set_current_semi_chat_id(user_id:int, usern: str|None = None, chat_id: int|None = None):
+# Next two functions are relate to AGANIST user
+async def set_current_semi_chat_id(user_id:int, button_text: str|None = None, chat_id: int|None = None):
     """ 
         example: (current_semi_chat:88888888 = 12)
         1) get sa_connection id from user* button which user clicked on that before.
@@ -119,11 +118,11 @@ async def set_current_semi_chat_id(user_id:int, usern: str|None = None, chat_id:
         you can get chat_id from the value of user* which is saved by store_chat_id_hash before
         you also can give the chat id manual
     """
-    if usern:
-        chat_id = await r.hget(f"chatmap:{user_id}", usern)
+    if button_text:
+        chat_id = await get_chat_id_by_button(user_id, button_text)
     await r.set(f"current_semi_chat:{user_id}", chat_id)
 
 async def get_current_semi_chat_id(user_id:int):
     """ example: (current_semi_chat:88888888 = 17) """
 
-    return await r.get(f"current_semi_chat:{user_id}")
+    return int(await r.get(f"current_semi_chat:{user_id}"))
