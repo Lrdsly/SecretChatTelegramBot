@@ -50,6 +50,13 @@ async def end_connection(user_id:int, against_id:int):
     await r.delete(f"state:{user_id}"); await r.delete(f"state:{against_id}")
     await r.delete(f"against:{user_id}"); await r.delete(f"against:{against_id}")
 
+    user_csci = await get_current_semi_chat_id(user_id)
+    against_csci = await get_current_semi_chat_id(against_id)
+    if against_csci == user_csci:
+        await r.delete(f"current_semi_chat:{user_id}")
+        await r.delete(f"current_semi_chat:{against_id}")
+    await r.delete(f"current_semi_chat:{user_id}")
+
 # ---- Anonymous chat ----
 async def add_to_queue(user_id:int):
     """ add a telegram id to 'search for aponent' list from right side """
@@ -81,16 +88,37 @@ async def match_users():
         return None
 
     await create_a_connections_row(user1_id, user2_id)
-    await link_client_to_against(user1_id, user2_id, "anon-chat")
+    await link_client_to_against(user1_id, user2_id)
     return [user1_id, user2_id]
 
+async def link_client_to_against(user_id:int, against_id:int):
+    """ 
+        example: (against:8745316 = 12345678) and (against:12345678 = 8745316)
+        it also update user state (anon-chat instead of seraching or ...)
+    """
+
+    await update_user_state(user_id, 'anon-chat')
+    await update_user_state(against_id, 'anon-chat')
+
+    await r.set(f"against:{user_id}", against_id) # user side
+    await r.set(f"against:{against_id}", user_id) # against side
+
 # ---- Semi Anon ----
-async def match_sa_users(user_id:int, against_id:int):
+"""
+    In semi-anonymous chat, one of the sides is known and the other one is anonymous.
+    In functions bellow we assume that against_id is matched to known user and user_id is matched to anonymous one.
+    
+    set_current_semi_chat_id works by button_text for against user and by chat_id for anonymous user, since against user can have multiple semi-anonymous chats but anonymous user.
+    since a person can recive multiple semi-anon chats we don't set current_semi_chat_id and against:nnnnnnnn 
+            until he select one of those chats by clicking on user* button
+"""
+
+async def sa_match_users(user_id:int, against_id:int):
     """ 
         We know who is against, but user is anonymous
     """
 
-    await link_client_to_against(user_id, against_id, "semi-chat")
+    await sa_link_client_to_against(user_id, against_id)
     return await create_sa_connections_row(user_id, against_id)
 
 async def store_chat_id_hash(mapping:dict, user_id:int):
@@ -108,7 +136,16 @@ async def store_chat_id_hash(mapping:dict, user_id:int):
 async def get_chat_id_by_button(user_id:int, button_text:str):
     return await r.hget(f"chatmap:{user_id}", button_text)
 
-# Next two functions are relate to AGANIST user
+async def sa_link_client_to_against(user_id:int, against_id:int):
+    """ 
+        example: (against:8745316 = 12345678) and (against:12345678 = 8745316)
+        it also update user state (semi-chat instead of seraching or ...)
+    """
+
+    # State of against will set when ever he click on user* button, so we just need to set state of user_id here
+    await update_user_state(user_id, 'semi-chat')
+    await r.set(f"against:{user_id}", against_id) # user side
+
 async def set_current_semi_chat_id(user_id:int, button_text: str|None = None, chat_id: int|None = None):
     """ 
         example: (current_semi_chat:88888888 = 12)
@@ -125,4 +162,6 @@ async def set_current_semi_chat_id(user_id:int, button_text: str|None = None, ch
 async def get_current_semi_chat_id(user_id:int):
     """ example: (current_semi_chat:88888888 = 17) """
 
-    return int(await r.get(f"current_semi_chat:{user_id}"))
+    if csc_id := await r.get(f"current_semi_chat:{user_id}"):
+        return int(csc_id)
+    return 0

@@ -44,11 +44,33 @@ async def get_or_register_user(telegram_id:int,
 async def get_secret_link(user_id:int):
     query = "SELECT personal_id FROM users WHERE telegram_id = %s"
     personal_id = await fetchone(query, (user_id,))
-    print("-"*100)
-    print(personal_id)
     link = f"https://ble.ir/DebtManagerBot?start={personal_id[0]}"
     return link
 
 async def get_user_by_personal_id(personal_id:int):
     query = """ SELECT * FROM users WHERE personal_id = %s"""
     return await fetchone(query, (personal_id,))
+
+async def get_user_full_name(user_id:int):
+    query = "SELECT name, lastname, username FROM users WHERE telegram_id = %s"
+    result= await fetchone(query, (user_id,))
+
+    if not result:
+        return "ناشناس"
+    
+    name, lastname, username = result
+    output = None
+
+    if name and lastname:
+        output = [f"{name} {lastname}"]
+    elif name:
+        output = [name]
+    elif lastname:
+        output = [lastname]
+    else:
+        output = ["ناشناس"]
+
+    if username: output.append(username)
+    else: output.append(0)
+        
+    return output

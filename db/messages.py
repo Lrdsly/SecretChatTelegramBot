@@ -12,18 +12,19 @@ async def store_sent_message(sender_id, conversation_id:int, message):
 
 async def get_unread_messages(sender_id, conversation_id:int):
     query = """
-                SELECT * FROM semi_messages WHERE (sender_id, conversation_id) = (%s, %s)
+                SELECT * FROM semi_messages WHERE (sender_id, conversation_id) = (%s, %s) AND is_read = FALSE
             """
     messages = await fetchall(query, (sender_id, conversation_id))
     return messages
 
-async def get_unread_messages_count(conversation_id:int):
+async def get_unread_messages_count(conversation_id:int, reciver_id):
     query = """
                 SELECT COUNT(*) FROM semi_messages WHERE
                 conversation_id = %s AND
+                sender_id <> %s AND
                 is_read = FALSE
             """
-    return (await fetchone(query, (conversation_id,)))[0]
+    return (await fetchone(query, (conversation_id, reciver_id)))[0]
 
 async def update_messages_status(sender_id:int, conversation_id:int):
     query = """
