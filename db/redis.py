@@ -3,11 +3,13 @@ from random import sample
 
 from db.semi_anon import create_sa_connections_row
 from db.anon import create_a_connections_row
-# ---- TODAY IS GREAT ----
+
+import os
+# ---- TODAY IS GREAT ----  
 
 r = redis.Redis(
-    host="localhost",
-    port=6379,
+    host=os.getenv("REDIS_HOST", "redis"),
+    port=int(os.getenv("REDIS_PORT", 6379)),
     decode_responses=True
 )
 

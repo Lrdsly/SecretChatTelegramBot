@@ -4,13 +4,11 @@ import db.pool as pool
 import db.initialize as initializer
 import handlers
 
-from dotenv import load_dotenv
 import asyncio
 import os
 
 # ---- ENJOY CODING TODAY ----
 
-load_dotenv()
 TOKEN = os.getenv("TOKEN")
 
 
